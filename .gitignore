@@ -1,0 +1,13 @@
+# Build outputs & APKs
+*.apk
+*.keystore
+signed_output/
+build/
+*.log
+
+# OS & Environment
+.DS_Store
+Thumbs.db
+*.env
+*secret*
+*token*

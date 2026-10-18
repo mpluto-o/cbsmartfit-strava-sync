@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/0" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1" version="1.0" creator="CBSmartFit-StravaBridge">
+<metadata>
+  <time>2026-10-18T08:41:05.00Z</time>
+</metadata>
+<trk>
+  <name>Outdoor Walk with Cadence &amp; HR</name>
+  <type>Walk</type>
+  <trkseg>
+    <trkpt lat="37.774929" lon="-122.419416">
+      <ele>15.2</ele>
+      <time>2026-10-18T08:41:05.00Z</time>
+      <extensions>
+        <gpxtpx:TrackPointExtension>
+          <gpxtpx:hr>82</gpxtpx:hr>
+          <gpxtpx:cad>105</gpxtpx:cad>
+        </gpxtpx:TrackPointExtension>
+      </extensions>
+    </trkpt>
+    <trkpt lat="37.775010" lon="-122.419520">
+      <ele>15.4</ele>
+      <time>2026-10-18T08:41:10.00Z</time>
+      <extensions>
+        <gpxtpx:TrackPointExtension>
+          <gpxtpx:hr>95</gpxtpx:hr>
+          <gpxtpx:cad>112</gpxtpx:cad>
+        </gpxtpx:TrackPointExtension>
+      </extensions>
+    </trkpt>
+    <trkpt lat="37.775120" lon="-122.419630">
+      <ele>15.6</ele>
+      <time>2026-10-18T08:41:15.00Z</time>
+      <extensions>
+        <gpxtpx:TrackPointExtension>
+          <gpxtpx:hr>108</gpxtpx:hr>
+          <gpxtpx:cad>118</gpxtpx:cad>
+        </gpxtpx:TrackPointExtension>
+      </extensions>
+    </trkpt>
+    <trkpt lat="37.775240" lon="-122.419750">
+      <ele>15.9</ele>
+      <time>2026-10-18T08:41:20.00Z</time>
+      <extensions>
+        <gpxtpx:TrackPointExtension>
+          <gpxtpx:hr>124</gpxtpx:hr>
+          <gpxtpx:cad>120</gpxtpx:cad>
+        </gpxtpx:TrackPointExtension>
+      </extensions>
+    </trkpt>
+  </trkseg>
+</trk>
+</gpx>
