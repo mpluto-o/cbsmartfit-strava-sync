@@ -53,6 +53,11 @@ Instead of spending \$300–\$500 on a high-end Garmin, Apple Watch, or paying m
 - **Layout Container Remap:** Audited and patched 190+ layout files (306 container replacements across ScrollViews, RelativeLayouts, ViewPagers, and ListViews).
 - **High-Contrast Typography:** Converted all telemetry values to crisp bold white (`#ffffffff`) and secondary labels to `#ff9ca3af` for maximum daylight and nighttime legibility.
 
+### 4. ⚡ Real-Time BLE Sync & Persistent Health Connect / Google Fit Bridge
+- **Pull-to-Refresh Manual Trigger:** Engineered manual forced sync capability on the Home dashboard with dark-themed refresh spinners (`#121214` background with accent progress indicator).
+- **Persistent Real-Time SQLite Storage:** Patched Dalvik dispatch handlers in `FragmentHomePage$6.smali` (`pswitch_15`) and `DataProcessing.smali` (`rateOf24HourRealTimeDataOperate`). Real-time BLE heart rate measurements are now immediately committed to SQLite table `rate_24_hour_table_name` tagged with the exact minute of the day (`TimeFormatUtils.getPhoneCurrentMinute()`), eliminating timestamp regressions upon app switching or resuming.
+- **Instant Health Connect Dispatch:** Hooked real-time heart rate ingress directly into `HealthConnectUtils.uploadHeartRateRecord()`, synchronizing fresh readings to Android Health Connect and Google Fit without latency.
+
 ---
 
 ## 📸 Visual Showcase & Proof
@@ -75,6 +80,14 @@ Real-world outdoor walk tracked using the patched CB SmartFit app and synced aut
 
 ---
 
+### 🔄 Real-Time Pull-To-Refresh & Health Connect Sync
+
+| Dark Pull-To-Refresh | Persistent Dashboard | Google Fit Daily Timeline | Synced Data Points |
+| :---: | :---: | :---: | :---: |
+| ![Pull to Refresh](assets/screenshots/v17_pull_refresh_active.png)<br>*(OLED-themed pull-down sync)* | ![Persistent Resumed Home](assets/screenshots/v18_home_resumed.png)<br>*(Maintains latest reading on app resume)* | ![Google Fit HR](assets/screenshots/v18_google_fit_journal.png)<br>*(Live sync to Google Fit / Health Connect)* | ![Google Fit Source Data](assets/screenshots/v18_google_fit_entries_bottom.png)<br>*(Exact 1:1 timestamped entries)* |
+
+---
+
 ### 📱 Full App Interface (Post-Patch)
 
 | Home Dashboard | Heart Rate Details | Blood Oxygen | Sub-Page Settings |
@@ -91,19 +104,19 @@ Real-world outdoor walk tracked using the patched CB SmartFit app and synced aut
 | Everest 2.0 Watch |  (Continuous HR, Steps, Gyro)     | - Intercepts BLE Stream  |
 +-------------------+                                   | - Pairs Phone GPS Points |
                                                         | - Injects Cadence Math   |
+                                                        | - Commits to SQLite DB   |
                                                         +--------------------------+
-                                                                     |
-                                                                     v
-                                                        +--------------------------+
-                                                        | GPX Builder Engine       |
-                                                        | (<gpxtpx:TrackPointExt>) |
-                                                        +--------------------------+
-                                                                     |
-                                                                     v Multipart POST
-                                                        +--------------------------+
-                                                        | Strava API v3            |
-                                                        | (/api/v3/uploads)        |
-                                                        +--------------------------+
+                                                          |                      |
+                                         TrackPoint Ext.  v                      v HealthConnect
+                                        +--------------------+      +-------------------------+
+                                        | GPX Builder Engine |      | Android Health Connect  |
+                                        +--------------------+      +-------------------------+
+                                                  |                              |
+                                                  v Multipart POST               v
+                                        +--------------------+      +-------------------------+
+                                        | Strava API v3      |      | Google Fit              |
+                                        | (/api/v3/uploads)  |      +-------------------------+
+                                        +--------------------+
 ```
 
 ### Key Bytecode Hooks (`Smali`)
@@ -111,6 +124,8 @@ Real-world outdoor walk tracked using the patched CB SmartFit app and synced aut
    Implemented [`StravaEndWorkoutListener.smali`](patches/smali/StravaEndWorkoutListener.smali) to hook into `GoogleSportMapActivity` and `SportMapActivity`, intercepting manual or auto-pause workout completions without map crashes.
 2. **TrackPoint Cadence & HR Injection:**
    Extended [`GpsToGpxUtils.smali`](patches/smali/GpsToGpxUtils.smali) to create XML `gpxtpx:TrackPointExtension` nodes, populating `gpxtpx:hr` and `gpxtpx:cad` for each recorded GPS trackpoint.
+3. **Real-Time Heart Rate SQLite Persistence & Health Connect Sync:**
+   Patched `FragmentHomePage$6.smali` (`pswitch_15`) and `DataProcessing.smali` (`rateOf24HourRealTimeDataOperate`) to ensure real-time BLE heart rate packets are saved to SQLite (`saveHeartRateData`) and pushed to Health Connect (`uploadHeartRateRecord`) without waiting for periodic scheduled batch cycles.
 
 ---
 
