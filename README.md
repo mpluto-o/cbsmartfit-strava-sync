@@ -54,9 +54,14 @@ Instead of spending \$300–\$500 on a high-end Garmin, Apple Watch, or paying m
 - **High-Contrast Typography:** Converted all telemetry values to crisp bold white (`#ffffffff`) and secondary labels to `#ff9ca3af` for maximum daylight and nighttime legibility.
 
 ### 4. ⚡ Real-Time BLE Sync & Persistent Health Connect / Google Fit Bridge
-- **Pull-to-Refresh Manual Trigger:** Engineered manual forced sync capability on the Home dashboard with dark-themed refresh spinners (`#121214` background with accent progress indicator).
+- **Pull-to-Refresh Manual Trigger:** Engineered manual forced sync capability on the Home dashboard with pure OLED pitch black refresh spinners (`#000000` background with accent progress indicator).
 - **Persistent Real-Time SQLite Storage:** Patched Dalvik dispatch handlers in `FragmentHomePage$6.smali` (`pswitch_15`) and `DataProcessing.smali` (`rateOf24HourRealTimeDataOperate`). Real-time BLE heart rate measurements are now immediately committed to SQLite table `rate_24_hour_table_name` tagged with the exact minute of the day (`TimeFormatUtils.getPhoneCurrentMinute()`), eliminating timestamp regressions upon app switching or resuming.
 - **Instant Health Connect Dispatch:** Hooked real-time heart rate ingress directly into `HealthConnectUtils.uploadHeartRateRecord()`, synchronizing fresh readings to Android Health Connect and Google Fit without latency.
+
+### 5. 🛡️ Deterministic Health Connect Deduplication (v19)
+- **Deterministic Record IDs (`clientRecordId`):** In `HealthConnectModel.smali` and its record upload builders (`uploadHeartRateRecord`, `uploadOxygenSaturationRecord`, `uploadSleepSessionRecord`, `uploadBloodPressureRecord`), we attached unique deterministic IDs based on the record metric and exact timestamp (e.g. `cbsmartfit_hr_<calendarTime>`).
+- **Zero Ghost Duplicates:** Instead of inserting new UUIDs for every sync event, Android Health Connect now performs an idempotent upsert (`insertRecords`). Health Connect's internal change-log stays completely lean.
+- **Instant Google Fit Ingestion:** Reader apps like Google Fit no longer stall or drop the Heart Rate card due to stale caches (>8 hours) or thousands of duplicate change-log events. Heart rate and vitals display live, real-time metrics seamlessly.
 
 ---
 
@@ -82,9 +87,9 @@ Real-world outdoor walk tracked using the patched CB SmartFit app and synced aut
 
 ### 🔄 Real-Time Pull-To-Refresh & Health Connect Sync
 
-| Dark Pull-To-Refresh | Persistent Dashboard | Google Fit Daily Timeline | Synced Data Points |
+| Dark Pull-To-Refresh | Persistent Dashboard | Google Fit Live Heart Rate (v19) | Synced Data Points |
 | :---: | :---: | :---: | :---: |
-| ![Pull to Refresh](assets/screenshots/v17_pull_refresh_active.png)<br>*(OLED-themed pull-down sync)* | ![Persistent Resumed Home](assets/screenshots/v18_home_resumed.png)<br>*(Maintains latest reading on app resume)* | ![Google Fit HR](assets/screenshots/v18_google_fit_journal.png)<br>*(Live sync to Google Fit / Health Connect)* | ![Google Fit Source Data](assets/screenshots/v18_google_fit_entries_bottom.png)<br>*(Exact 1:1 timestamped entries)* |
+| ![Pull to Refresh](assets/screenshots/v17_pull_refresh_active.png)<br>*(OLED-themed pull-down sync)* | ![Persistent Resumed Home](assets/screenshots/v18_home_resumed.png)<br>*(Maintains latest reading on app resume)* | ![Google Fit Live HR](assets/screenshots/v19_fit_home_hr_live.png)<br>*(Live Heart Rate card restored in Google Fit)* | ![Google Fit Source Data](assets/screenshots/v18_google_fit_entries_bottom.png)<br>*(Exact 1:1 timestamped entries)* |
 
 ---
 
@@ -126,6 +131,8 @@ Real-world outdoor walk tracked using the patched CB SmartFit app and synced aut
    Extended [`GpsToGpxUtils.smali`](patches/smali/GpsToGpxUtils.smali) to create XML `gpxtpx:TrackPointExtension` nodes, populating `gpxtpx:hr` and `gpxtpx:cad` for each recorded GPS trackpoint.
 3. **Real-Time Heart Rate SQLite Persistence & Health Connect Sync:**
    Patched `FragmentHomePage$6.smali` (`pswitch_15`) and `DataProcessing.smali` (`rateOf24HourRealTimeDataOperate`) to ensure real-time BLE heart rate packets are saved to SQLite (`saveHeartRateData`) and pushed to Health Connect (`uploadHeartRateRecord`) without waiting for periodic scheduled batch cycles.
+4. **Deterministic ClientRecordId Deduplication:**
+   Implemented [`HealthConnectModel.smali`](patches/smali/HealthConnectModel.smali) (`createMetadata`) attaching metric-keyed deterministic client record IDs to prevent duplicate inserts and maintain instantaneous sync reactivity in Google Fit.
 
 ---
 
@@ -161,6 +168,7 @@ adb install -r signed_output/unsigned_patched-aligned-debugSigned.apk
 ├── patches/
 │   └── smali/
 │       ├── GpsToGpxUtils.smali        # GPX telemetry TrackPointExtension builder
+│       ├── HealthConnectModel.smali   # Deterministic clientRecordId deduplication builder
 │       ├── StravaEndWorkoutListener.smali # Workout completion and export listener
 │       └── StravaMapHelper.smali      # Map crash prevention and lifecycle handler
 └── scripts/
