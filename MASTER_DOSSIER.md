@@ -66,13 +66,14 @@ All project assets, tools, build pipelines, and decompiled trees are located on 
   [/Users/mpluto/.gemini/antigravity/scratch/android-sdk/platform-tools/adb](file:///Users/mpluto/.gemini/antigravity/scratch/android-sdk/platform-tools/adb)
 
 ### 3. Generated APK Binaries
-* **Final Signed Production APK (`v19`):**  
-  [/Users/mpluto/.gemini/antigravity/scratch/cbsmartfit_dev/signed_output_v19/unsigned_v19-aligned-debugSigned.apk](file:///Users/mpluto/.gemini/antigravity/scratch/cbsmartfit_dev/signed_output_v19/unsigned_v19-aligned-debugSigned.apk)
-* **Unsigned Final Build (`v19`):**  
-  [/Users/mpluto/.gemini/antigravity/scratch/cbsmartfit_dev/unsigned_v19.apk](file:///Users/mpluto/.gemini/antigravity/scratch/cbsmartfit_dev/unsigned_v19.apk)
-* **Intermediate Releases:**  
-  * `v17` (Pull-to-refresh & SQLite persistence): [/Users/mpluto/.gemini/antigravity/scratch/cbsmartfit_dev/signed_output_v17](file:///Users/mpluto/.gemini/antigravity/scratch/cbsmartfit_dev/signed_output_v17)
+* **Final Signed Production APK (`v20` - Battery & Thermal Optimized):**  
+  [/Users/mpluto/.gemini/antigravity/scratch/cbsmartfit_dev/signed_output_v20/unsigned_v20-aligned-debugSigned.apk](file:///Users/mpluto/.gemini/antigravity/scratch/cbsmartfit_dev/signed_output_v20/unsigned_v20-aligned-debugSigned.apk)
+* **Unsigned Final Build (`v20`):**  
+  [/Users/mpluto/.gemini/antigravity/scratch/cbsmartfit_dev/unsigned_v20.apk](file:///Users/mpluto/.gemini/antigravity/scratch/cbsmartfit_dev/unsigned_v20.apk)
+* **Historical Builds:**  
+  * `v19` (Deterministic Health Connect deduplication): [/Users/mpluto/.gemini/antigravity/scratch/cbsmartfit_dev/signed_output_v19](file:///Users/mpluto/.gemini/antigravity/scratch/cbsmartfit_dev/signed_output_v19)
   * `v18` (SQLite schema verification & dark refresh v1): [/Users/mpluto/.gemini/antigravity/scratch/cbsmartfit_dev/signed_output_v18](file:///Users/mpluto/.gemini/antigravity/scratch/cbsmartfit_dev/signed_output_v18)
+  * `v17` (Pull-to-refresh & SQLite persistence): [/Users/mpluto/.gemini/antigravity/scratch/cbsmartfit_dev/signed_output_v17](file:///Users/mpluto/.gemini/antigravity/scratch/cbsmartfit_dev/signed_output_v17)
 
 ---
 
@@ -130,6 +131,14 @@ All project assets, tools, build pipelines, and decompiled trees are located on 
   3. This ensures Health Connect performs an **idempotent upsert** (`insertRecords`). Updating existing timestamps updates the existing record rather than creating new entries.
   4. Changed the pull-to-refresh spinner background color in `FragmentHomePage.smali` to `#000000` (pure AMOLED black).
   5. Tested and verified on device: Google Fit ingested the deduplicated stream, and the **Heart Rate card reappeared directly on Google Fit's Home dashboard**.
+
+### Phase 5: Power & Thermal Optimization (Version 20)
+* **The Problem:** Calling `uploadHeartRateRecord()` on continuous 1-second BLE real-time packets in `DataProcessing.smali` caused a runaway background loop. Because `uploadHeartRateRecord()` queried the entire SQLite database (`queryHeartRateAllInfo`) and generated huge `Gson.toJson()` debug logs on every packet, it pinned the CPU at 100%, causing high device temperatures, exhausting the 512MB heap with `OutOfMemoryError` in both the app and Android OS `system_server`, forcing system reboots, and draining the battery overnight.
+* **The Solution:**
+  1. **Decoupled Live BLE Stream from Full-Database Health Connect Uploads:** Removed `uploadHeartRateRecord()` from `rateOf24HourRealTimeDataOperate` and `FragmentHomePage$6.smali` (`pswitch_15`).
+  2. **Preserved Instant Local Minute Persistence:** Retained `saveHeartRateData` (SQLite write) on the live BLE stream so the app's real-time UI, home screen, and graphs still update and persist instantly for the current minute without reverting.
+  3. **Batch Sync Safe Execution:** Health Connect sync now triggers safely during pull-to-refresh (manual sync), hourly periodic sync (OEM event `0x18`), and upon workout completion.
+  4. **Eliminated Memory-Intensive Logging:** Replaced massive full-database `Gson.toJson()` log serialization in `HealthConnectUtils.smali` across all health records with lightweight size-counter logging.
 
 ---
 
